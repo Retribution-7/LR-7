@@ -1,0 +1,1786 @@
+{
+  "info": {
+    "name": "Аудит — REST API",
+    "description": "Тесты ЛР №7, вариант 4. Перед запуском выполните `npm run db:seed`. Запускать папки по порядку (Collection Runner), каждый запрос содержит автотесты.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Служебное",
+      "item": [
+        {
+          "name": "Проверка доступности API",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql(\"ok\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          }
+        },
+        {
+          "name": "Несуществующий маршрут",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 404\", () => pm.response.to.have.status(404));",
+                  "pm.expect(pm.response.json()).to.have.property(\"message\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/unknown"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Категории",
+      "item": [
+        {
+          "name": "Создание категории",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"categoryId\", pm.response.json().id);",
+                  "pm.expect(pm.response.json().hourlyRate).to.eql(40);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/categories",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Тестовая категория {{$timestamp}}\",\n  \"hourlyRate\": 40\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: ставка ≤ 0 (валидация)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));",
+                  "const d = pm.response.json().details; pm.expect(d.some(x => x.path === \"hourlyRate\")).to.be.true;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/categories",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ошибка\",\n  \"hourlyRate\": -5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: дубликат названия",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/categories",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"1-я категория\",\n  \"hourlyRate\": 31\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Список: пагинация",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json(); pm.expect(b).to.have.keys([\"data\",\"total\",\"page\",\"limit\",\"pages\"]); pm.expect(b.data.length).to.be.at.most(2); pm.expect(b.limit).to.eql(2);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories?page=1&limit=2"
+          }
+        },
+        {
+          "name": "Список: сортировка по ставке (убывание)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const v = pm.response.json().data.map(x => x.hourlyRate); pm.expect(v).to.eql([...v].sort((a,b) => b-a));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories?sortBy=hourlyRate&order=desc"
+          }
+        },
+        {
+          "name": "Список: сортировка по недопустимому полю",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories?sortBy=secret"
+          }
+        },
+        {
+          "name": "Список: фильтр по диапазону ставки",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.response.json().data.forEach(c => pm.expect(c.hourlyRate).to.be.within(20, 35));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories?rateMin=20&rateMax=35"
+          }
+        },
+        {
+          "name": "Список: поиск по названию",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data; pm.expect(d.length).to.be.above(0); d.forEach(c => pm.expect(c.name.toLowerCase()).to.include(\"категория\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories?search=категория"
+          }
+        },
+        {
+          "name": "Детали по ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"categoryId\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Детали: записи нет",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 404\", () => pm.response.to.have.status(404));",
+                  "pm.expect(pm.response.json().message).to.include(\"не найден\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories/999999"
+          }
+        },
+        {
+          "name": "Детали: некорректный id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories/abc"
+          }
+        },
+        {
+          "name": "Существование: HEAD (есть)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "HEAD",
+            "header": [],
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Существование: HEAD (нет)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "HEAD",
+            "header": [],
+            "url": "{{baseUrl}}/categories/999999"
+          }
+        },
+        {
+          "name": "Существование: GET /exists",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().exists).to.be.true;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories/{{categoryId}}/exists"
+          }
+        },
+        {
+          "name": "Обновление категории",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().hourlyRate).to.eql(42.5);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/categories/{{categoryId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hourlyRate\": 42.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Обновление: записи нет",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/categories/999999",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hourlyRate\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Сотрудники",
+      "item": [
+        {
+          "name": "Создание сотрудника",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"passport\", \"TS\" + Math.floor(1000000 + Math.random()*8999999));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"employeeId\", pm.response.json().id);",
+                  "pm.expect(pm.response.json().category).to.have.property(\"name\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/employees",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Тестов Иван Петрович\",\n  \"passportNumber\": \"{{passport}}\",\n  \"birthDate\": \"1990-05-12\",\n  \"workPhone\": \"+375 29 111-22-33\",\n  \"categoryId\": \"{{categoryId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: паспорт неверного формата",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));",
+                  "pm.expect(pm.response.json().details.some(x => x.path === \"passportNumber\")).to.be.true;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/employees",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Тестов Пётр\",\n  \"passportNumber\": \"12345\",\n  \"birthDate\": \"1990-05-12\",\n  \"workPhone\": \"+375 29 111-22-33\",\n  \"categoryId\": \"{{categoryId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: возраст меньше 18 (кастомный валидатор)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));",
+                  "pm.expect(pm.response.json().details.some(x => x.path === \"birthDate\")).to.be.true;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/employees",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Юный Сотрудник\",\n  \"passportNumber\": \"TS0000001\",\n  \"birthDate\": \"2020-01-01\",\n  \"workPhone\": \"+375 29 111-22-33\",\n  \"categoryId\": \"{{categoryId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: дата рождения в будущем",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/employees",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Будущий Сотрудник\",\n  \"passportNumber\": \"TS0000002\",\n  \"birthDate\": \"2999-01-01\",\n  \"workPhone\": \"+375 29 111-22-33\",\n  \"categoryId\": \"{{categoryId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: дубликат паспорта",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/employees",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Двойник Тестов\",\n  \"passportNumber\": \"{{passport}}\",\n  \"birthDate\": \"1991-01-01\",\n  \"workPhone\": \"+375 29 111-22-33\",\n  \"categoryId\": \"{{categoryId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: несуществующая категория",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/employees",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Без Категории\",\n  \"passportNumber\": \"TS0000003\",\n  \"birthDate\": \"1991-01-01\",\n  \"workPhone\": \"+375 29 111-22-33\",\n  \"categoryId\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание с фото (multipart)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"passport2\", \"TS\" + Math.floor(1000000 + Math.random()*8999999));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"employee2Id\", pm.response.json().id);",
+                  "pm.expect(pm.response.json().photo).to.match(/^\\/uploads\\//);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/employees",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "fullName",
+                  "value": "Фотов Алексей",
+                  "type": "text"
+                },
+                {
+                  "key": "passportNumber",
+                  "value": "{{passport2}}",
+                  "type": "text"
+                },
+                {
+                  "key": "birthDate",
+                  "value": "1985-03-20",
+                  "type": "text"
+                },
+                {
+                  "key": "workPhone",
+                  "value": "+375 29 222-33-44",
+                  "type": "text"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Список: пагинация",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json(); pm.expect(b.page).to.eql(2); pm.expect(b.data.length).to.be.at.most(5);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees?page=2&limit=5"
+          }
+        },
+        {
+          "name": "Список: сортировка по ФИО",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().data.length).to.be.above(0); // порядок текста зависит от collation БД, поэтому проверяем лишь успешный ответ"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees?sortBy=fullName&order=asc&limit=50"
+          }
+        },
+        {
+          "name": "Список: сортировка по полю связанной таблицы",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees?sortBy=category.hourlyRate&order=desc"
+          }
+        },
+        {
+          "name": "Список: фильтр по нескольким полям",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data; pm.expect(d.length).to.be.above(0); d.forEach(e => { pm.expect(e.categoryId).to.eql(Number(pm.collectionVariables.get(\"categoryId\"))); pm.expect(e.birthDate.slice(0,10) >= \"1980-01-01\" && e.birthDate.slice(0,10) <= \"2000-12-31\").to.be.true; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees?categoryId={{categoryId}}&birthFrom=1980-01-01&birthTo=2000-12-31"
+          }
+        },
+        {
+          "name": "Список: поиск по нескольким полям",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data; pm.expect(d.length).to.be.above(0); d.forEach(e => pm.expect(e.fullName.toLowerCase()).to.include(\"тестов\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees?search=тестов"
+          }
+        },
+        {
+          "name": "Список: поиск + фильтр + сортировка + пагинация",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees?search=тестов&categoryId={{categoryId}}&sortBy=birthDate&order=desc&page=1&limit=10"
+          }
+        },
+        {
+          "name": "Детали по ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json(); pm.expect(b).to.have.property(\"category\"); pm.expect(b._count).to.have.property(\"works\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees/{{employeeId}}"
+          }
+        },
+        {
+          "name": "Детали: записи нет",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees/999999"
+          }
+        },
+        {
+          "name": "Существование: HEAD",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "HEAD",
+            "header": [],
+            "url": "{{baseUrl}}/employees/{{employeeId}}"
+          }
+        },
+        {
+          "name": "Существование: GET /exists (нет записи)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().exists).to.be.false;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/employees/999999/exists"
+          }
+        },
+        {
+          "name": "Обновление (PUT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().workPhone).to.eql(\"+375 44 999-88-77\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/employees/{{employeeId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workPhone\": \"+375 44 999-88-77\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Обновление (PATCH): невалидное значение",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/employees/{{employeeId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workPhone\": \"abc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Предприятия",
+      "item": [
+        {
+          "name": "Создание предприятия",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"companyId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/companies",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ООО «Тест-Аудит {{$timestamp}}»\",\n  \"address\": \"г. Минск, ул. Тестовая, 1\",\n  \"phone\": \"+375 17 123-45-67\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: слишком короткий адрес",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));",
+                  "pm.expect(pm.response.json().details.some(x => x.path === \"address\")).to.be.true;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/companies",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ООО «Ошибка»\",\n  \"address\": \"1\",\n  \"phone\": \"+375 17 123-45-67\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Список: фильтр по адресу и поиск",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.response.json().data.forEach(c => pm.expect(c.address).to.include(\"Минск\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/companies?address=Минск&search=тест"
+          }
+        },
+        {
+          "name": "Список: сортировка и пагинация",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json(); pm.expect(b.data.length).to.be.at.most(3); pm.expect(b.limit).to.eql(3);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/companies?sortBy=name&order=desc&page=1&limit=3"
+          }
+        },
+        {
+          "name": "Детали по ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/companies/{{companyId}}"
+          }
+        },
+        {
+          "name": "Детали: записи нет",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/companies/999999"
+          }
+        },
+        {
+          "name": "Существование: HEAD",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "HEAD",
+            "header": [],
+            "url": "{{baseUrl}}/companies/{{companyId}}"
+          }
+        },
+        {
+          "name": "Обновление",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().address).to.eql(\"г. Минск, ул. Новая, 5\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/companies/{{companyId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"г. Минск, ул. Новая, 5\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Работы",
+      "item": [
+        {
+          "name": "Создание работы",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"workId\", pm.response.json().id);",
+                  "pm.expect(pm.response.json().hoursWorked).to.eql(8);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/works",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"workDate\": \"2025-03-03\",\n  \"hoursWorked\": 8\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: часы больше 24",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/works",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"workDate\": \"2025-03-04\",\n  \"hoursWorked\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: дата в будущем",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/works",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"workDate\": \"2999-01-01\",\n  \"hoursWorked\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: за день больше 24 часов (кастомный валидатор)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));",
+                  "pm.expect(pm.response.json().message).to.include(\"валидации\");",
+                  "pm.expect(pm.response.json().details[0].message).to.include(\"за день\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/works",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"workDate\": \"2025-03-03\",\n  \"hoursWorked\": 17\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Создание: несуществующий сотрудник",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/works",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 999999,\n  \"companyId\": \"{{companyId}}\",\n  \"workDate\": \"2025-03-04\",\n  \"hoursWorked\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Список: пагинация",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json(); pm.expect(b.data.length).to.be.at.most(5); pm.expect(b.data[0]).to.have.property(\"employee\"); pm.expect(b.data[0]).to.have.property(\"company\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/works?page=1&limit=5"
+          }
+        },
+        {
+          "name": "Список: сортировка по ФИО сотрудника",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/works?sortBy=employee.fullName&order=asc&limit=50"
+          }
+        },
+        {
+          "name": "Список: фильтр по нескольким полям",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data; pm.expect(d.length).to.be.above(0); d.forEach(w => { pm.expect(w.employeeId).to.eql(Number(pm.collectionVariables.get(\"employeeId\"))); pm.expect(w.hoursWorked).to.be.within(4, 10); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/works?employeeId={{employeeId}}&companyId={{companyId}}&dateFrom=2025-01-01&dateTo=2025-12-31&hoursMin=4&hoursMax=10"
+          }
+        },
+        {
+          "name": "Список: поиск по сотруднику и предприятию",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().data.length).to.be.above(0);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/works?search=тест"
+          }
+        },
+        {
+          "name": "Детали по ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json(); pm.expect(b.employee).to.have.property(\"category\"); pm.expect(b.company).to.have.property(\"address\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/works/{{workId}}"
+          }
+        },
+        {
+          "name": "Детали: записи нет",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/works/999999"
+          }
+        },
+        {
+          "name": "Существование: GET /exists",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().exists).to.be.true;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/works/{{workId}}/exists"
+          }
+        },
+        {
+          "name": "Обновление работы",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().hoursWorked).to.eql(6);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/works/{{workId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hoursWorked\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Отчёт",
+      "item": [
+        {
+          "name": "Ведомость начислений за год",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json(); let sum = 0; b.companies.forEach(c => { c.rows.forEach(r => pm.expect(r.accrued).to.be.closeTo(r.hoursWorked * r.hourlyRate, 0.011)); sum += c.totalAccrued; }); pm.expect(b.totalAccrued).to.be.closeTo(sum, 0.011);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reports/payroll?year=2025"
+          }
+        },
+        {
+          "name": "Ведомость: некорректный месяц",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reports/payroll?year=2025&month=13"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Удаление и целостность",
+      "item": [
+        {
+          "name": "Удаление категории с сотрудниками",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 409\", () => pm.response.to.have.status(409));",
+                  "pm.expect(pm.response.json().message).to.include(\"Невозможно удалить\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Удаление сотрудника с работами",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 409\", () => pm.response.to.have.status(409));",
+                  "pm.expect(pm.response.json().message).to.include(\"Невозможно удалить\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/employees/{{employeeId}}"
+          }
+        },
+        {
+          "name": "Удаление предприятия с работами",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/companies/{{companyId}}"
+          }
+        },
+        {
+          "name": "Удаление работы",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/works/{{workId}}"
+          }
+        },
+        {
+          "name": "Повторное удаление работы",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/works/{{workId}}"
+          }
+        },
+        {
+          "name": "Проверка существования после удаления",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().exists).to.be.false;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/works/{{workId}}/exists"
+          }
+        },
+        {
+          "name": "Удаление сотрудника (фото) без работ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/employees/{{employee2Id}}"
+          }
+        },
+        {
+          "name": "Удаление сотрудника",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/employees/{{employeeId}}"
+          }
+        },
+        {
+          "name": "Удаление предприятия",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/companies/{{companyId}}"
+          }
+        },
+        {
+          "name": "Удаление категории",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

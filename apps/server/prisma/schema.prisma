@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Категория сотрудника (1-я, 2-я, 3-я) со ставкой за 1 час
+model Category {
+  id         Int        @id @default(autoincrement())
+  name       String     @unique @db.VarChar(50)
+  /// Ставка за 1 час, тыс. руб.
+  hourlyRate Decimal    @db.Decimal(10, 2)
+  employees  Employee[]
+
+  @@map("categories")
+}
+
+/// Сотрудник аудиторской фирмы
+model Employee {
+  id             Int      @id @default(autoincrement())
+  fullName       String   @db.VarChar(150)
+  passportNumber String   @unique @db.VarChar(20)
+  birthDate      DateTime @db.Date
+  workPhone      String   @db.VarChar(30)
+  photo          String?  @db.VarChar(255)
+  categoryId     Int
+  category       Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  works          Work[]
+
+  @@index([categoryId])
+  @@map("employees")
+}
+
+/// Проверяемое предприятие (вынесено из «Работы», чтобы не дублировать данные)
+model Company {
+  id      Int     @id @default(autoincrement())
+  name    String  @unique @db.VarChar(150)
+  address String  @db.VarChar(255)
+  phone   String  @db.VarChar(30)
+  photo   String? @db.VarChar(255)
+  works   Work[]
+
+  @@map("companies")
+}
+
+/// Выполненная работа: сотрудник проверял предприятие в указанную дату
+model Work {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  companyId   Int
+  workDate    DateTime @db.Date
+  /// Количество отработанных часов
+  hoursWorked Decimal  @db.Decimal(4, 2)
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@index([companyId])
+  @@index([workDate])
+  @@map("works")
+}

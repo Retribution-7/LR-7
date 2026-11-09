@@ -1,0 +1,432 @@
+{
+  "categories": [
+    {
+      "name": "1-я категория",
+      "hourlyRate": 30
+    },
+    {
+      "name": "2-я категория",
+      "hourlyRate": 22
+    },
+    {
+      "name": "3-я категория",
+      "hourlyRate": 15
+    }
+  ],
+  "companies": [
+    {
+      "name": "ООО «СтройГрад»",
+      "address": "г. Минск, пр-т Независимости, 58",
+      "phone": "+375 17 350-59-71"
+    },
+    {
+      "name": "ОАО «Белмашпром»",
+      "address": "г. Минск, ул. Тимирязева, 12",
+      "phone": "+375 17 310-59-97"
+    },
+    {
+      "name": "ЗАО «АгроТорг»",
+      "address": "г. Брест, ул. Советская, 45",
+      "phone": "+375 17 396-78-37"
+    },
+    {
+      "name": "ООО «ТехноЛайн»",
+      "address": "г. Минск, ул. Притыцкого, 101",
+      "phone": "+375 17 326-70-87"
+    },
+    {
+      "name": "ООО «Минск-Логистик»",
+      "address": "г. Минск, ул. Могилёвская, 8",
+      "phone": "+375 17 277-89-38"
+    },
+    {
+      "name": "ОАО «Гродно-Текстиль»",
+      "address": "г. Гродно, ул. Ожешко, 22",
+      "phone": "+375 17 375-47-40"
+    },
+    {
+      "name": "ЗАО «БелФарм-Опт»",
+      "address": "г. Минск, ул. Роменская, 4",
+      "phone": "+375 17 306-85-65"
+    },
+    {
+      "name": "ОАО «Витебский Мебельщик»",
+      "address": "г. Витебск, ул. Ленина, 30",
+      "phone": "+375 17 373-72-23"
+    },
+    {
+      "name": "ООО «Гомельдрев-Инвест»",
+      "address": "г. Гомель, ул. Советская, 17",
+      "phone": "+375 17 257-96-53"
+    },
+    {
+      "name": "ОАО «Брестская Кондитерская»",
+      "address": "г. Брест, ул. Гоголя, 9",
+      "phone": "+375 17 254-66-79"
+    },
+    {
+      "name": "ООО «Могилёвлифт-Сервис»",
+      "address": "г. Могилёв, ул. Первомайская, 63",
+      "phone": "+375 17 347-74-26"
+    },
+    {
+      "name": "ЗАО «Полесье-Агро»",
+      "address": "г. Пинск, ул. Брестская, 71",
+      "phone": "+375 17 369-91-59"
+    }
+  ],
+  "employees": [
+    {
+      "fullName": "Иванов Андрей Сергеевич",
+      "passportNumber": "AB4861526",
+      "birthDate": "1998-07-07",
+      "workPhone": "+375 25 771-37-27",
+      "categoryName": "1-я категория"
+    },
+    {
+      "fullName": "Петрова Елена Викторовна",
+      "passportNumber": "AB6604805",
+      "birthDate": "1967-05-02",
+      "workPhone": "+375 29 805-57-12",
+      "categoryName": "2-я категория"
+    },
+    {
+      "fullName": "Сидоров Максим Олегович",
+      "passportNumber": "KH8483400",
+      "birthDate": "1986-09-07",
+      "workPhone": "+375 44 288-37-76",
+      "categoryName": "3-я категория"
+    },
+    {
+      "fullName": "Козлова Ольга Николаевна",
+      "passportNumber": "KB5222066",
+      "birthDate": "1992-01-03",
+      "workPhone": "+375 25 488-94-22",
+      "categoryName": "1-я категория"
+    },
+    {
+      "fullName": "Новиков Дмитрий Павлович",
+      "passportNumber": "MP0346807",
+      "birthDate": "2000-05-20",
+      "workPhone": "+375 29 568-83-20",
+      "categoryName": "2-я категория"
+    },
+    {
+      "fullName": "Морозова Анна Игоревна",
+      "passportNumber": "KB5945353",
+      "birthDate": "1992-05-13",
+      "workPhone": "+375 25 725-99-90",
+      "categoryName": "3-я категория"
+    },
+    {
+      "fullName": "Волков Артём Андреевич",
+      "passportNumber": "HB5216379",
+      "birthDate": "1969-07-24",
+      "workPhone": "+375 29 975-26-73",
+      "categoryName": "1-я категория"
+    },
+    {
+      "fullName": "Соколова Наталья Петровна",
+      "passportNumber": "MC2416326",
+      "birthDate": "1998-05-23",
+      "workPhone": "+375 33 218-87-43",
+      "categoryName": "2-я категория"
+    },
+    {
+      "fullName": "Лебедев Игорь Валерьевич",
+      "passportNumber": "MP7689264",
+      "birthDate": "1972-02-20",
+      "workPhone": "+375 44 362-34-40",
+      "categoryName": "3-я категория"
+    },
+    {
+      "fullName": "Ковалёва Татьяна Александровна",
+      "passportNumber": "MP2959115",
+      "birthDate": "1976-06-13",
+      "workPhone": "+375 33 717-45-40",
+      "categoryName": "1-я категория"
+    },
+    {
+      "fullName": "Кравец Виталий Станиславович",
+      "passportNumber": "KB3465523",
+      "birthDate": "1977-05-19",
+      "workPhone": "+375 29 252-72-38",
+      "categoryName": "2-я категория"
+    },
+    {
+      "fullName": "Шевченко Ирина Леонидовна",
+      "passportNumber": "MP3052437",
+      "birthDate": "1999-11-13",
+      "workPhone": "+375 29 880-57-85",
+      "categoryName": "3-я категория"
+    },
+    {
+      "fullName": "Бондаренко Сергей Михайлович",
+      "passportNumber": "KB4168235",
+      "birthDate": "2002-07-25",
+      "workPhone": "+375 25 769-14-16",
+      "categoryName": "1-я категория"
+    },
+    {
+      "fullName": "Захарова Мария Дмитриевна",
+      "passportNumber": "KH5679868",
+      "birthDate": "1997-09-10",
+      "workPhone": "+375 33 890-71-41",
+      "categoryName": "2-я категория"
+    },
+    {
+      "fullName": "Мельник Павел Юрьевич",
+      "passportNumber": "KB6381300",
+      "birthDate": "1989-10-27",
+      "workPhone": "+375 25 519-73-23",
+      "categoryName": "3-я категория"
+    },
+    {
+      "fullName": "Гришин Алексей Романович",
+      "passportNumber": "KH1024577",
+      "birthDate": "1995-04-19",
+      "workPhone": "+375 44 499-52-51",
+      "categoryName": "1-я категория"
+    },
+    {
+      "fullName": "Жукова Светлана Борисовна",
+      "passportNumber": "HB3315255",
+      "birthDate": "1989-07-04",
+      "workPhone": "+375 29 233-94-16",
+      "categoryName": "2-я категория"
+    },
+    {
+      "fullName": "Тихонов Владислав Евгеньевич",
+      "passportNumber": "KB4508032",
+      "birthDate": "1992-08-03",
+      "workPhone": "+375 25 775-69-81",
+      "categoryName": "3-я категория"
+    },
+    {
+      "fullName": "Климова Екатерина Владимировна",
+      "passportNumber": "AB8510002",
+      "birthDate": "1990-10-16",
+      "workPhone": "+375 25 119-45-40",
+      "categoryName": "1-я категория"
+    },
+    {
+      "fullName": "Рябов Николай Анатольевич",
+      "passportNumber": "KH8529925",
+      "birthDate": "1998-01-20",
+      "workPhone": "+375 44 828-38-54",
+      "categoryName": "2-я категория"
+    }
+  ],
+  "works": [
+    {
+      "employeePassport": "MP2959115",
+      "companyName": "ООО «Могилёвлифт-Сервис»",
+      "workDate": "2026-01-22",
+      "hoursWorked": 4
+    },
+    {
+      "employeePassport": "KB5945353",
+      "companyName": "ООО «ТехноЛайн»",
+      "workDate": "2026-01-25",
+      "hoursWorked": 6
+    },
+    {
+      "employeePassport": "KB6381300",
+      "companyName": "ЗАО «Полесье-Агро»",
+      "workDate": "2026-01-26",
+      "hoursWorked": 5
+    },
+    {
+      "employeePassport": "KH8483400",
+      "companyName": "ООО «СтройГрад»",
+      "workDate": "2026-01-29",
+      "hoursWorked": 4
+    },
+    {
+      "employeePassport": "MP2959115",
+      "companyName": "ОАО «Гродно-Текстиль»",
+      "workDate": "2026-02-02",
+      "hoursWorked": 8
+    },
+    {
+      "employeePassport": "AB6604805",
+      "companyName": "ООО «Минск-Логистик»",
+      "workDate": "2026-02-16",
+      "hoursWorked": 7
+    },
+    {
+      "employeePassport": "MP0346807",
+      "companyName": "ЗАО «Полесье-Агро»",
+      "workDate": "2026-03-19",
+      "hoursWorked": 5
+    },
+    {
+      "employeePassport": "KH1024577",
+      "companyName": "ООО «Могилёвлифт-Сервис»",
+      "workDate": "2026-03-26",
+      "hoursWorked": 4.5
+    },
+    {
+      "employeePassport": "MP7689264",
+      "companyName": "ЗАО «БелФарм-Опт»",
+      "workDate": "2026-03-26",
+      "hoursWorked": 2
+    },
+    {
+      "employeePassport": "HB3315255",
+      "companyName": "ОАО «Витебский Мебельщик»",
+      "workDate": "2026-04-21",
+      "hoursWorked": 2
+    },
+    {
+      "employeePassport": "KB4508032",
+      "companyName": "ОАО «Белмашпром»",
+      "workDate": "2026-04-22",
+      "hoursWorked": 6
+    },
+    {
+      "employeePassport": "HB3315255",
+      "companyName": "ЗАО «АгроТорг»",
+      "workDate": "2026-04-22",
+      "hoursWorked": 5
+    },
+    {
+      "employeePassport": "KB5222066",
+      "companyName": "ООО «Гомельдрев-Инвест»",
+      "workDate": "2026-04-29",
+      "hoursWorked": 8
+    },
+    {
+      "employeePassport": "KH5679868",
+      "companyName": "ОАО «Гродно-Текстиль»",
+      "workDate": "2026-05-14",
+      "hoursWorked": 5
+    },
+    {
+      "employeePassport": "KH1024577",
+      "companyName": "ООО «Могилёвлифт-Сервис»",
+      "workDate": "2026-05-17",
+      "hoursWorked": 7
+    },
+    {
+      "employeePassport": "MP2959115",
+      "companyName": "ОАО «Гродно-Текстиль»",
+      "workDate": "2026-05-20",
+      "hoursWorked": 7
+    },
+    {
+      "employeePassport": "KH1024577",
+      "companyName": "ОАО «Гродно-Текстиль»",
+      "workDate": "2026-05-21",
+      "hoursWorked": 4
+    },
+    {
+      "employeePassport": "AB8510002",
+      "companyName": "ООО «СтройГрад»",
+      "workDate": "2026-05-26",
+      "hoursWorked": 5
+    },
+    {
+      "employeePassport": "MP0346807",
+      "companyName": "ООО «ТехноЛайн»",
+      "workDate": "2026-05-31",
+      "hoursWorked": 4
+    },
+    {
+      "employeePassport": "KH1024577",
+      "companyName": "ОАО «Белмашпром»",
+      "workDate": "2026-06-07",
+      "hoursWorked": 2
+    },
+    {
+      "employeePassport": "KB6381300",
+      "companyName": "ООО «СтройГрад»",
+      "workDate": "2026-06-11",
+      "hoursWorked": 3
+    },
+    {
+      "employeePassport": "AB6604805",
+      "companyName": "ОАО «Гродно-Текстиль»",
+      "workDate": "2026-06-11",
+      "hoursWorked": 6
+    },
+    {
+      "employeePassport": "MP2959115",
+      "companyName": "ООО «СтройГрад»",
+      "workDate": "2026-06-28",
+      "hoursWorked": 6
+    },
+    {
+      "employeePassport": "AB6604805",
+      "companyName": "ЗАО «БелФарм-Опт»",
+      "workDate": "2026-07-01",
+      "hoursWorked": 4.5
+    },
+    {
+      "employeePassport": "KH5679868",
+      "companyName": "ЗАО «БелФарм-Опт»",
+      "workDate": "2026-07-06",
+      "hoursWorked": 3
+    },
+    {
+      "employeePassport": "MP3052437",
+      "companyName": "ООО «Могилёвлифт-Сервис»",
+      "workDate": "2026-07-08",
+      "hoursWorked": 6
+    },
+    {
+      "employeePassport": "MP3052437",
+      "companyName": "ЗАО «АгроТорг»",
+      "workDate": "2026-07-27",
+      "hoursWorked": 7
+    },
+    {
+      "employeePassport": "MP2959115",
+      "companyName": "ОАО «Белмашпром»",
+      "workDate": "2026-07-27",
+      "hoursWorked": 8
+    },
+    {
+      "employeePassport": "HB3315255",
+      "companyName": "ОАО «Белмашпром»",
+      "workDate": "2026-07-29",
+      "hoursWorked": 2
+    },
+    {
+      "employeePassport": "KB5945353",
+      "companyName": "ООО «ТехноЛайн»",
+      "workDate": "2026-08-03",
+      "hoursWorked": 7
+    },
+    {
+      "employeePassport": "KH8483400",
+      "companyName": "ООО «Гомельдрев-Инвест»",
+      "workDate": "2026-08-27",
+      "hoursWorked": 8
+    },
+    {
+      "employeePassport": "KB6381300",
+      "companyName": "ООО «Минск-Логистик»",
+      "workDate": "2026-09-01",
+      "hoursWorked": 3
+    },
+    {
+      "employeePassport": "MP3052437",
+      "companyName": "ОАО «Брестская Кондитерская»",
+      "workDate": "2026-10-14",
+      "hoursWorked": 4.5
+    },
+    {
+      "employeePassport": "MP2959115",
+      "companyName": "ЗАО «АгроТорг»",
+      "workDate": "2026-10-15",
+      "hoursWorked": 3
+    },
+    {
+      "employeePassport": "KH8483400",
+      "companyName": "ЗАО «АгроТорг»",
+      "workDate": "2026-10-28",
+      "hoursWorked": 4.5
+    }
+  ]
+}

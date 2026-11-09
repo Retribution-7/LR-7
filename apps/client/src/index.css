@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 22% 96%;
+  --foreground: 222 40% 13%;
+  --card: 0 0% 100%;
+  --muted: 213 20% 92%;
+  --muted-foreground: 215 14% 38%;
+  --border: 214 18% 84%;
+  --primary: 174 82% 24%;
+  --primary-foreground: 0 0% 100%;
+  --destructive: 4 70% 42%;
+  --sidebar: 222 40% 13%;
+  --sidebar-foreground: 210 25% 90%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  table,
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Анимации отвечают на действия пользователя (открытие диалога, появление уведомления) */
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes pop-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98) }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1) }
+}
+@keyframes slide-in { from { opacity: 0; transform: translateX(16px) } to { opacity: 1; transform: translateX(0) } }
+
+@layer components {
+  .anim-fade[data-state='open'] { animation: fade-in 0.15s ease-out; }
+  .anim-pop[data-state='open'] { animation: pop-in 0.18s ease-out; }
+  .anim-toast[data-state='open'] { animation: slide-in 0.2s ease-out; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+@media print {
+  aside, header, .no-print { display: none !important; }
+  main { padding: 0 !important; }
+}
