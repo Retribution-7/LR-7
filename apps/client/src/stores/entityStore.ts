@@ -24,13 +24,10 @@ export interface ListState<T> {
   setParams: (p: Partial<ListParams>) => void;
   setFilter: (key: string, value: string) => void;
   resetParams: () => void;
-  /** id = null — создание (POST), иначе обновление (PUT). Ошибка пробрасывается в форму как ApiError. */
   save: (id: number | null, payload: FormData | Record<string, unknown>) => Promise<T>;
-  /** Возвращает true, если удалено; при ошибке (например, 409) показывает уведомление */
   remove: (id: number) => Promise<boolean>;
 }
 
-/** Фабрика стора списка сущности: пагинация, сортировка, поиск, фильтры и CRUD через REST API */
 export function createListStore<T>(
   resource: string,
   defaults: { sortBy: string; order?: 'asc' | 'desc' },
@@ -66,7 +63,6 @@ export function createListStore<T>(
         const { data } = await api.get<Paged<T>>(`/${resource}`, { params: query });
         if (mine !== seq) return;
         if (page > data.pages) {
-          // после удаления последней записи страницы — переходим на предыдущую
           set((s) => ({ params: { ...s.params, page: data.pages } }));
           return get().load();
         }

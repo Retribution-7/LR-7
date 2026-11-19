@@ -1,8 +1,3 @@
-/**
- * Заполнение БД исходными данными из prisma/seed-data.json.
- * Запуск: npm run db:seed (очищает таблицы и создаёт данные заново).
- * Записи создаются через расширенный клиент, поэтому проходят ту же валидацию, что и API.
- */
 import fs from 'fs';
 import path from 'path';
 import { basePrisma, prisma } from '../src/db';

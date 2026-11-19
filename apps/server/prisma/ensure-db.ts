@@ -1,8 +1,3 @@
-/**
- * Создаёт базу данных PostgreSQL, указанную в DATABASE_URL, если её ещё нет.
- * Подключается к служебной БД `postgres` и выполняет CREATE DATABASE.
- * Запуск: npm run db:setup (или tsx prisma/ensure-db.ts).
- */
 import 'dotenv/config';
 import { Client } from 'pg';
 

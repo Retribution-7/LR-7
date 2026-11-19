@@ -1,7 +1,3 @@
-/**
- * Заполняет БД сид-данными, только если она пуста (чтобы не затирать данные при каждом запуске).
- * Запуск: npm run db:setup (или tsx prisma/seed-if-empty.ts). Полная перезаливка — npm run db:seed.
- */
 import { spawnSync } from 'node:child_process';
 import { basePrisma } from '../src/db';
 

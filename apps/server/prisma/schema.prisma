@@ -7,18 +7,15 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Категория сотрудника (1-я, 2-я, 3-я) со ставкой за 1 час
 model Category {
   id         Int        @id @default(autoincrement())
   name       String     @unique @db.VarChar(50)
-  /// Ставка за 1 час, тыс. руб.
   hourlyRate Decimal    @db.Decimal(10, 2)
   employees  Employee[]
 
   @@map("categories")
 }
 
-/// Сотрудник аудиторской фирмы
 model Employee {
   id             Int      @id @default(autoincrement())
   fullName       String   @db.VarChar(150)
@@ -34,7 +31,6 @@ model Employee {
   @@map("employees")
 }
 
-/// Проверяемое предприятие (вынесено из «Работы», чтобы не дублировать данные)
 model Company {
   id      Int     @id @default(autoincrement())
   name    String  @unique @db.VarChar(150)
@@ -46,41 +42,45 @@ model Company {
   @@map("companies")
 }
 
-/// Роль пользователя системы (справочник)
 model Role {
   id      Int    @id @default(autoincrement())
-  /// admin | user
   name    String @unique @db.VarChar(20)
   users   User[]
 
   @@map("roles")
 }
 
-/// Пользователь системы (учётная запись для входа)
 model User {
   id           Int       @id @default(autoincrement())
-  /// Логин (уникален, хранится в нижнем регистре)
   username     String    @unique @db.VarChar(30)
-  /// Хэш пароля (bcryptjs)
   passwordHash String    @db.VarChar(100)
-  /// Хэш одноразового токена восстановления пароля (SHA-256 hex); null — токена нет
   resetTokenHash    String?   @db.VarChar(64)
-  /// Срок действия токена восстановления; null — токена нет
   resetTokenExpiresAt DateTime?
   roleId       Int
   role         Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  refreshTokens RefreshToken[]
 
   @@index([roleId])
   @@map("users")
 }
 
-/// Выполненная работа: сотрудник проверял предприятие в указанную дату
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique @db.VarChar(64)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
 model Work {
   id          Int      @id @default(autoincrement())
   employeeId  Int
   companyId   Int
   workDate    DateTime @db.Date
-  /// Количество отработанных часов
   hoursWorked Decimal  @db.Decimal(4, 2)
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)

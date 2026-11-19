@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, toApiError } from './api';
 
-/** Загрузка одной записи по id: GET /api/<resource>/:id, отдельно обрабатывается 404 */
 export function useDetail<T>(resource: string, id: number) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);

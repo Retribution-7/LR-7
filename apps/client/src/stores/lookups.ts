@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { api } from '@/lib/api';
 import type { Category, Company, Employee, Paged } from '@/lib/types';
 
-/** Справочники для выпадающих списков в формах и фильтрах (сервер отдаёт максимум 100 записей за запрос) */
 interface LookupsState {
   categories: Category[];
   companies: Company[];
@@ -29,7 +28,6 @@ export const useLookups = create<LookupsState>((set, get) => ({
       ]);
       set({ categories, companies, employees, loaded: true });
     } catch {
-      /* ошибки покажет основной список */
     }
   },
   async load() {

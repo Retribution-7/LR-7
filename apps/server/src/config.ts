@@ -10,4 +10,5 @@ export const config = {
   uploadDir: path.resolve(process.env.UPLOAD_DIR ?? 'uploads'),
   jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '12h',
+  refreshTtlMs: Number(process.env.REFRESH_TTL_DAYS ?? 7) * 24 * 60 * 60 * 1000,
 };

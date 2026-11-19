@@ -3,7 +3,6 @@ import { twMerge } from 'tailwind-merge';
 
 export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));
 
-/** 2026-05-12T00:00:00.000Z -> 12.05.2026 */
 export function formatDate(iso?: string | null) {
   if (!iso) return '—';
   const [y, m, d] = iso.slice(0, 10).split('-');

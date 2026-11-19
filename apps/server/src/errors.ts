@@ -1,6 +1,5 @@
 import { ZodError } from 'zod';
 
-/** Ошибка с HTTP-статусом, которую errorHandler превращает в JSON-ответ */
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -17,7 +16,6 @@ export interface FieldIssue {
   message: string;
 }
 
-/** Ошибка валидации данных на уровне модели (бросается из расширения Prisma) */
 export class ValidationError extends Error {
   issues: FieldIssue[];
 

@@ -92,7 +92,7 @@ export function Layout() {
 
   return (
     <div className="min-h-screen md:grid md:grid-cols-[14rem_1fr]">
-      {/* Боковая панель — на широких экранах */}
+      
       <aside className="hidden bg-sidebar text-sidebar-foreground md:block">
         <div className="sticky top-0 flex h-screen flex-col">
           <div className="px-6 py-5 text-lg font-semibold text-white">Аудит</div>
@@ -101,7 +101,7 @@ export function Layout() {
         </div>
       </aside>
 
-      {/* Верхняя панель — на мобильных */}
+      
       <header className="sticky top-0 z-40 flex items-center justify-between bg-sidebar px-4 py-3 text-white md:hidden">
         <span className="text-lg font-semibold">Аудит</span>
         <button onClick={() => setOpen((v) => !v)} aria-label={open ? 'Закрыть меню' : 'Открыть меню'} aria-expanded={open}>

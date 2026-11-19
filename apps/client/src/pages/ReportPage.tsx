@@ -10,7 +10,6 @@ import type { PayrollReport } from '@/lib/types';
 import { formatDate, formatNumber, MONTHS } from '@/lib/utils';
 import { useLookups } from '@/stores/lookups';
 
-/** Ведомость начислений сотрудникам: часы × ставка категории, итоги по предприятиям и общий итог */
 export default function ReportPage() {
   const companies = useLookups((l) => l.companies);
   const loadLookups = useLookups((l) => l.load);

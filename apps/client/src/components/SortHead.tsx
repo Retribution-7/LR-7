@@ -10,7 +10,6 @@ interface Props {
   className?: string;
 }
 
-/** Заголовок столбца, по клику сортирует список */
 export function SortHead({ label, field, sortBy, order, onSort, className }: Props) {
   const active = sortBy === field;
   return (

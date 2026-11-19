@@ -2,7 +2,6 @@ import { HttpError } from '../errors';
 
 export type Q = Record<string, unknown>;
 
-/** Значение query-параметра как непустая строка (первое, если передан массив) */
 export function str(q: Q, key: string): string | undefined {
   let v = q[key];
   if (Array.isArray(v)) v = v[0];
@@ -33,7 +32,6 @@ export function parsePagination(q: Q) {
   return { page, limit, skip: (page - 1) * limit };
 }
 
-/** Параметр :id как положительное целое число */
 export function parseId(raw: string): number {
   if (!/^\d+$/.test(raw) || Number(raw) < 1 || Number(raw) > 2_147_483_647) {
     throw new HttpError(400, 'Некорректный id: ожидается положительное целое число');
@@ -41,7 +39,6 @@ export function parseId(raw: string): number {
   return Number(raw);
 }
 
-/** 'employee.fullName' + 'asc' -> { employee: { fullName: 'asc' } } */
 export function nest(path: string, value: unknown): Record<string, unknown> {
   return path
     .split('.')
@@ -49,7 +46,6 @@ export function nest(path: string, value: unknown): Record<string, unknown> {
     .reduce<unknown>((acc, key) => ({ [key]: acc }), value) as Record<string, unknown>;
 }
 
-/** Добавляет условие по (возможно вложенному) полю, сливая операторы gte/lte одного поля */
 export function setCond(where: Record<string, any>, path: string, cond: Record<string, unknown>) {
   const keys = path.split('.');
   let cur = where;

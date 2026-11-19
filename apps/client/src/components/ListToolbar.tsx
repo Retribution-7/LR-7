@@ -17,7 +17,6 @@ interface Props {
 }
 
 export function ListToolbar({ search, onSearch, searchPlaceholder = 'Поиск', sortOptions, sortBy, order, onSort, onReset, children }: Props) {
-  // поиск с задержкой, чтобы не слать запрос на каждый символ
   const [text, setText] = useState(search);
   useEffect(() => setText(search), [search]);
   useEffect(() => {
@@ -68,7 +67,6 @@ export function ListToolbar({ search, onSearch, searchPlaceholder = 'Поиск'
   );
 }
 
-/** Подпись + контрол фильтра */
 export function FilterItem({ label, children, className = 'w-40' }: { label: string; children: ReactNode; className?: string }) {
   return (
     <label className={`flex flex-col gap-1 text-xs text-muted-foreground ${className}`}>
@@ -78,7 +76,6 @@ export function FilterItem({ label, children, className = 'w-40' }: { label: str
   );
 }
 
-/** Выпадающий фильтр с пунктом «Все» */
 export function SelectFilter({
   value,
   onChange,

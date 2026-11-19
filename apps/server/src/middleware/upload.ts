@@ -27,15 +27,12 @@ export const upload = multer({
   },
 });
 
-/** Публичный путь файла, который хранится в БД */
 export const publicPath = (filename: string) => `/uploads/${filename}`;
 
-/** Удаляет ранее загруженный файл по пути из БД (ошибки игнорируются) */
 export async function removeUploaded(photo?: string | null) {
   if (!photo || !photo.startsWith('/uploads/')) return;
   try {
     await fsp.unlink(path.join(config.uploadDir, path.basename(photo)));
   } catch {
-    /* файла уже нет */
   }
 }

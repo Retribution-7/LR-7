@@ -21,7 +21,6 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   item?: Work | null;
-  /** предзаполнение при создании (например, со страницы сотрудника) */
   preset?: Partial<WorkFormValues>;
   onSaved?: () => void;
 }

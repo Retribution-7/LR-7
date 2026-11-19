@@ -33,7 +33,6 @@
   }
 }
 
-/* Анимации отвечают на действия пользователя (открытие диалога, появление уведомления) */
 @keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
 @keyframes pop-in {
   from { opacity: 0; transform: translate(-50%, -48%) scale(0.98) }

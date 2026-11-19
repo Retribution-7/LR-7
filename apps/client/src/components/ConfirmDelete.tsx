@@ -16,7 +16,6 @@ interface Props {
   onClose: () => void;
 }
 
-/** Подтверждение удаления — удаление выполняется только после согласия пользователя */
 export function ConfirmDelete({ open, title, description, onConfirm, onClose }: Props) {
   const [busy, setBusy] = useState(false);
 

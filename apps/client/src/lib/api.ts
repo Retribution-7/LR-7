@@ -1,7 +1,9 @@
 import axios from 'axios';
-import { getToken } from './session';
+import { getRefreshToken, getToken, setRefreshToken, setToken } from './session';
 
-export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api' });
+const baseURL = import.meta.env.VITE_API_URL ?? '/api';
+
+export const api = axios.create({ baseURL });
 
 api.interceptors.request.use((config) => {
   const t = getToken();
@@ -9,11 +11,40 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-api.interceptors.response.use(undefined, (error) => {
-  if (axios.isAxiosError(error) && error.response?.status === 401) {
-    const url = error.config?.url ?? '';
+interface TokenPair {
+  token: string;
+  refreshToken: string;
+}
+
+let refreshInFlight: Promise<TokenPair> | null = null;
+
+const refreshSession = (): Promise<TokenPair> => {
+  refreshInFlight ??= (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) throw new Error('Refresh-токен отсутствует');
+    const { data } = await axios.post<TokenPair>(`${baseURL}/auth/refresh`, { refreshToken });
+    setToken(data.token);
+    setRefreshToken(data.refreshToken);
+    return data;
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
+};
+
+api.interceptors.response.use(undefined, async (error) => {
+  const original = error.config;
+  if (axios.isAxiosError(error) && error.response?.status === 401 && original && !original._retry) {
+    const url = original.url ?? '';
     if (!url.includes('/auth/')) {
-      import('@/stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().logout());
+      original._retry = true;
+      try {
+        const { token } = await refreshSession();
+        original.headers = { ...original.headers, Authorization: `Bearer ${token}` };
+        return api.request(original);
+      } catch {
+        import('@/stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().logout());
+      }
     }
   }
   return Promise.reject(error);
@@ -30,7 +61,6 @@ export interface ApiError {
   details?: FieldIssue[];
 }
 
-/** Приводит любую ошибку Axios к единому виду для UI */
 export function toApiError(e: unknown): ApiError {
   if (axios.isAxiosError(e)) {
     if (!e.response) return { message: 'Нет связи с сервером. Проверьте, что API запущен.' };
@@ -44,6 +74,5 @@ export function toApiError(e: unknown): ApiError {
   return { message: e instanceof Error ? e.message : 'Неизвестная ошибка' };
 }
 
-/** Адрес загруженного фото (путь вида /uploads/...) */
 export const fileUrl = (path?: string | null) =>
   path ? `${import.meta.env.VITE_FILES_URL ?? ''}${path}` : null;

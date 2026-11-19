@@ -8,29 +8,22 @@ import { publicPath, removeUploaded, upload } from '../middleware/upload';
 import { nest, optInt, parseDate, parseId, parsePagination, Q, setCond, str } from '../utils/query';
 
 export interface FilterDef {
-  /** имя query-параметра */
   param: string;
-  /** поле модели (можно вложенное: 'employee.fullName') */
   field: string;
   type: 'int' | 'number' | 'date' | 'string';
   op: 'equals' | 'gte' | 'lte' | 'contains';
 }
 
 export interface CrudConfig {
-  /** ключ делегата Prisma: 'employee' */
   model: 'category' | 'employee' | 'company' | 'work';
-  /** название сущности для сообщений */
   label: string;
-  /** поля для полнотекстового поиска (?search=) */
   searchFields: string[];
-  /** допустимые поля сортировки (?sortBy=) */
   sortFields: string[];
   defaultSort: string;
   defaultOrder?: 'asc' | 'desc';
   filters: FilterDef[];
   include?: Record<string, unknown>;
   detailInclude?: Record<string, unknown>;
-  /** есть ли у сущности фото (multipart-загрузка) */
   hasPhoto?: boolean;
   deleteConflictMessage: string;
 }
@@ -70,10 +63,8 @@ export function createCrudRouter(cfg: CrudConfig) {
   const notFound = (id: number) => new HttpError(404, `${cfg.label} с id=${id} не найден(а)`);
   const uploadMw = cfg.hasPhoto ? [upload.single('photo')] : [];
 
-  /** Если запрос с файлом завершился ошибкой — файл на диске не нужен */
   const discardUpload = (req: Request) => (req.file ? removeUploaded(publicPath(req.file.filename)) : undefined);
 
-  // ---- 2–5. Список: пагинация, сортировка, фильтрация, поиск ----
   router.get(
     '/',
     ah(async (req, res) => {
@@ -105,8 +96,6 @@ export function createCrudRouter(cfg: CrudConfig) {
     }),
   );
 
-  // ---- 10. Проверка существования ----
-  // HEAD /:id — 200 или 404 без тела (объявлен до GET /:id, иначе Express отдаст HEAD в GET)
   router.head(
     '/:id',
     ah(async (req, res) => {
@@ -115,7 +104,6 @@ export function createCrudRouter(cfg: CrudConfig) {
     }),
   );
 
-  // GET /:id/exists — { exists: true|false } (всегда 200)
   router.get(
     '/:id/exists',
     ah(async (req, res) => {
@@ -124,7 +112,6 @@ export function createCrudRouter(cfg: CrudConfig) {
     }),
   );
 
-  // ---- 6–7. Детали по ID / отсутствие записи ----
   router.get(
     '/:id',
     ah(async (req, res) => {
@@ -135,7 +122,6 @@ export function createCrudRouter(cfg: CrudConfig) {
     }),
   );
 
-  // ---- 1. Создание ----
   router.post(
     '/',
     ...uploadMw,
@@ -156,7 +142,6 @@ export function createCrudRouter(cfg: CrudConfig) {
     }),
   );
 
-  // ---- 8. Обновление (PUT и PATCH принимают любое подмножество полей) ----
   const update = ah(async (req, res) => {
     try {
       const id = parseId(req.params.id);
@@ -183,7 +168,6 @@ export function createCrudRouter(cfg: CrudConfig) {
   router.put('/:id', ...uploadMw, update);
   router.patch('/:id', ...uploadMw, update);
 
-  // ---- 9. Удаление (только admin) ----
   router.delete(
     '/:id',
     requireRole('admin'),

@@ -1,7 +1,6 @@
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 import type { ApiError } from './api';
 
-/** Переносит ошибки валидации сервера в поля формы. Возвращает true, если хоть одна ошибка привязана к полю. */
 export function applyServerErrors<T extends FieldValues>(
   err: ApiError,
   setError: UseFormSetError<T>,

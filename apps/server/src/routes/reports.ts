@@ -7,11 +7,6 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export const reportsRouter = Router();
 
-/**
- * Ведомость начислений сотрудникам аудиторской фирмы (отчёт из индивидуального задания).
- * GET /api/reports/payroll?year=2026[&month=5][&companyId=3]
- * Начислено = часы × ставка категории (тыс. руб.); группировка по предприятиям.
- */
 reportsRouter.get(
   '/payroll',
   ah(async (req, res) => {

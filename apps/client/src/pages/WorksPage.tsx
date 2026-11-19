@@ -20,7 +20,6 @@ import { formatDate, formatNumber } from '@/lib/utils';
 import { useWorksStore } from '@/stores/entityStore';
 import { useLookups } from '@/stores/lookups';
 
-/** Подробности работы: GET /api/works/:id (с сотрудником, его категорией и предприятием) */
 function WorkDetailDialog({ id, onClose }: { id: number; onClose: () => void }) {
   const { data, loading, notFound, error } = useDetail<Work>('works', id);
   const rate = data?.employee?.category?.hourlyRate ?? 0;

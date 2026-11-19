@@ -1,7 +1,3 @@
-/**
- * Идемпотентное заполнение ролей и учётных пользователей.
- * Запуск: npm run db:seed-users (безопасно на уже заполненной БД).
- */
 import bcrypt from 'bcryptjs';
 import { basePrisma } from '../src/db';
 

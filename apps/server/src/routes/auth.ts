@@ -10,15 +10,26 @@ import {
   changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
+  refreshTokenSchema,
   registerSchema,
   resetPasswordSchema,
 } from '../validation/schemas';
 import { signToken } from '../utils/jwt';
+import { issueRefreshToken, revokeRefreshToken, revokeUserTokens, rotateRefreshToken } from '../utils/refresh';
 import { toPublicUser } from '../utils/users';
 
 const RESET_TTL_MS = 15 * 60 * 1000;
 
 const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
+
+const authPayload = async (user: { id: number; username: string; role: string | { name: string } }) => ({
+  token: signToken({
+    id: user.id,
+    username: user.username,
+    role: (typeof user.role === 'string' ? user.role : user.role.name) as 'admin' | 'user',
+  }),
+  refreshToken: await issueRefreshToken(user.id),
+});
 
 export const authRouter = Router();
 
@@ -46,7 +57,7 @@ authRouter.post(
     });
 
     res.status(201).json({
-      token: signToken({ id: user.id, username: user.username, role: user.role.name as 'admin' | 'user' }),
+      ...(await authPayload(user)),
       user: toPublicUser(user),
     });
   }),
@@ -65,9 +76,32 @@ authRouter.post(
     }
 
     res.json({
-      token: signToken({ id: user.id, username: user.username, role: user.role.name as 'admin' | 'user' }),
+      ...(await authPayload(user)),
       user: toPublicUser(user),
     });
+  }),
+);
+
+authRouter.post(
+  '/refresh',
+  ah(async (req, res) => {
+    const parsed = refreshTokenSchema.safeParse(req.body);
+    if (!parsed.success) throw ValidationError.fromZod(parsed.error);
+    const { refreshToken, user } = await rotateRefreshToken(parsed.data.refreshToken);
+    res.json({
+      token: signToken({ id: user.id, username: user.username, role: user.role.name as 'admin' | 'user' }),
+      refreshToken,
+    });
+  }),
+);
+
+authRouter.post(
+  '/logout',
+  ah(async (req, res) => {
+    const parsed = refreshTokenSchema.safeParse(req.body);
+    if (!parsed.success) throw ValidationError.fromZod(parsed.error);
+    await revokeRefreshToken(parsed.data.refreshToken);
+    res.json({ message: 'Сессия завершена' });
   }),
 );
 
@@ -92,7 +126,8 @@ authRouter.post(
       where: { id: user.id },
       data: { passwordHash: await bcrypt.hash(newPassword, 10) },
     });
-    res.json({ message: 'Пароль изменён' });
+    await revokeUserTokens(user.id);
+    res.json({ message: 'Пароль изменён', ...(await authPayload(req.user!)) });
   }),
 );
 
@@ -114,6 +149,8 @@ authRouter.post(
         },
       });
       console.log(`[reset] ${config.clientOrigin}/reset-password?token=${token}`);
+    } else {
+      console.log(`[reset] пользователь «${username}» не найден — ссылка не выдана`);
     }
     res.json({ message: 'Если указанный логин зарегистрирован, ссылка для восстановления отправлена' });
   }),
@@ -143,6 +180,7 @@ authRouter.post(
         resetTokenExpiresAt: null,
       },
     });
+    await revokeUserTokens(user.id);
     res.json({ message: 'Пароль восстановлен' });
   }),
 );

@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-/** Полных лет на указанную дату (UTC) */
 export function ageOn(birth: Date, ref: Date = new Date()): number {
   let age = ref.getUTCFullYear() - birth.getUTCFullYear();
   const m = ref.getUTCMonth() - birth.getUTCMonth();
@@ -11,7 +10,6 @@ export function ageOn(birth: Date, ref: Date = new Date()): number {
 export const MIN_AGE = 18;
 export const MAX_HOURS_PER_DAY = 24;
 
-/** Строка ГГГГ-ММ-ДД (допускается полный ISO — берутся первые 10 символов) -> Date (UTC, полночь) */
 const dateField = (label: string) =>
   z.preprocess(
     (v) => (typeof v === 'string' ? v.trim().slice(0, 10) : v),
@@ -43,7 +41,6 @@ const phoneField = (label: string) =>
 
 const photoField = z.string().max(255).nullable().optional();
 
-// ---------- Категория ----------
 export const categorySchema = z.object({
   name: z
     .string({ required_error: 'Название: обязательное поле' })
@@ -54,11 +51,9 @@ export const categorySchema = z.object({
     .number({ invalid_type_error: 'Ставка: ожидается число' })
     .positive('Ставка: должна быть больше 0')
     .max(1_000_000, 'Ставка: слишком большое значение')
-    // кастомный валидатор: не более 2 знаков после запятой
     .refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6, 'Ставка: не более 2 знаков после запятой'),
 });
 
-// ---------- Сотрудник ----------
 export const employeeSchema = z.object({
   fullName: z
     .string({ required_error: 'Ф.И.О.: обязательное поле' })
@@ -72,7 +67,6 @@ export const employeeSchema = z.object({
     .toUpperCase()
     .regex(/^[A-Z]{2}\d{7}$/, 'Номер паспорта: 2 латинские буквы и 7 цифр (например, MP1234567)'),
   birthDate: dateField('Дата рождения')
-    // кастомные валидаторы
     .refine((d) => d.getTime() <= Date.now(), 'Дата рождения: не может быть в будущем')
     .refine((d) => ageOn(d) >= MIN_AGE, `Дата рождения: сотруднику должно быть не менее ${MIN_AGE} лет`)
     .refine((d) => ageOn(d) <= 100, 'Дата рождения: некорректный возраст'),
@@ -81,7 +75,6 @@ export const employeeSchema = z.object({
   photo: photoField,
 });
 
-// ---------- Предприятие ----------
 export const companySchema = z.object({
   name: z
     .string({ required_error: 'Название: обязательное поле' })
@@ -97,7 +90,6 @@ export const companySchema = z.object({
   photo: photoField,
 });
 
-// ---------- Работа ----------
 export const workSchema = z.object({
   employeeId: intId('Сотрудник'),
   companyId: intId('Предприятие'),
@@ -112,7 +104,6 @@ export const workSchema = z.object({
     .refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6, 'Часы: не более 2 знаков после запятой'),
 });
 
-/** Схемы по имени модели Prisma — используются расширением клиента */
 export const modelSchemas: Record<string, z.AnyZodObject> = {
   Category: categorySchema,
   Employee: employeeSchema,
@@ -120,7 +111,6 @@ export const modelSchemas: Record<string, z.AnyZodObject> = {
   Work: workSchema,
 };
 
-// ---------- Аутентификация ----------
 
 const usernameField = z
   .string({ required_error: 'Логин: обязательное поле' })
@@ -140,7 +130,7 @@ const passwordField = z
 export const registerSchema = z.object({ username: usernameField, password: passwordField });
 
 export const loginSchema = z.object({
-  username: z.string({ required_error: 'Логин: обязательное поле' }).trim().min(1, 'Логин: обязательное поле'),
+  username: z.string({ required_error: 'Логин: обязательное поле' }).trim().toLowerCase().min(1, 'Логин: обязательное поле'),
   password: z.string({ required_error: 'Пароль: обязательное поле' }).min(1, 'Пароль: обязательное поле'),
 });
 
@@ -161,10 +151,14 @@ export const userRoleSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  username: z.string({ required_error: 'Логин: обязательное поле' }).trim().min(1, 'Логин: обязательное поле'),
+  username: z.string({ required_error: 'Логин: обязательное поле' }).trim().toLowerCase().min(1, 'Логин: обязательное поле'),
 });
 
 export const resetPasswordSchema = z.object({
   token: z.string({ required_error: 'Токен: обязательное поле' }).trim().min(1, 'Токен: обязательное поле'),
   newPassword: passwordField,
+});
+
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string({ required_error: 'Refresh-токен: обязательное поле' }).trim().min(1, 'Refresh-токен: обязательное поле'),
 });

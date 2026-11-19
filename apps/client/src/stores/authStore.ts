@@ -1,7 +1,13 @@
 import { create } from 'zustand';
 import { api, toApiError } from '@/lib/api';
-import { getToken, setToken } from '@/lib/session';
+import { clearSession, getRefreshToken, getToken, setRefreshToken, setToken } from '@/lib/session';
 import type { User } from '@/lib/types';
+
+interface AuthResponse {
+  token: string;
+  refreshToken: string;
+  user: User;
+}
 
 interface AuthState {
   user: User | null;
@@ -26,15 +32,16 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data } = await api.get<User>('/auth/me');
       set({ user: data, initializing: false });
     } catch {
-      setToken(null);
+      clearSession();
       set({ user: null, initializing: false });
     }
   },
 
   login: async (username, password) => {
     try {
-      const { data } = await api.post<{ token: string; user: User }>('/auth/login', { username, password });
+      const { data } = await api.post<AuthResponse>('/auth/login', { username, password });
       setToken(data.token);
+      setRefreshToken(data.refreshToken);
       set({ user: data.user });
     } catch (e) {
       throw toApiError(e);
@@ -43,8 +50,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   register: async (username, password) => {
     try {
-      const { data } = await api.post<{ token: string; user: User }>('/auth/register', { username, password });
+      const { data } = await api.post<AuthResponse>('/auth/register', { username, password });
       setToken(data.token);
+      setRefreshToken(data.refreshToken);
       set({ user: data.user });
     } catch (e) {
       throw toApiError(e);
@@ -52,13 +60,22 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
-    setToken(null);
+    const refreshToken = getRefreshToken();
+    if (refreshToken) void api.post('/auth/logout', { refreshToken }).catch(() => undefined);
+    clearSession();
     set({ user: null });
   },
 
   changePassword: async (oldPassword, newPassword) => {
     try {
-      await api.post('/auth/change-password', { oldPassword, newPassword });
+      const { data } = await api.post<Partial<AuthResponse> & { message: string }>('/auth/change-password', {
+        oldPassword,
+        newPassword,
+      });
+      if (data.token && data.refreshToken) {
+        setToken(data.token);
+        setRefreshToken(data.refreshToken);
+      }
     } catch (e) {
       throw toApiError(e);
     }

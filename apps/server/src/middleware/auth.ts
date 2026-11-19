@@ -19,7 +19,6 @@ declare global {
   }
 }
 
-/** Проверяет Bearer-токен и заполняет req.user свежими данными из БД */
 export const authenticate: RequestHandler = async (req, _res, next) => {
   try {
     const header = req.headers.authorization;
@@ -39,7 +38,6 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
   }
 };
 
-/** Пропускает запрос только при наличии одной из указанных ролей */
 export const requireRole =
   (...roles: Role[]): RequestHandler =>
   (req, _res, next) => {

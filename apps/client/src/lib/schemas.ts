@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { ageFrom } from './utils';
 
-/** Клиентская валидация зеркалит правила сервера (Zod-схемы в server/src/validation). Поля формы — строки. */
 
 const num = (v: string) => Number(v.replace(',', '.'));
 const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s;
@@ -55,7 +54,6 @@ export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 export type CompanyFormValues = z.infer<typeof companyFormSchema>;
 export type WorkFormValues = z.infer<typeof workFormSchema>;
 
-// ---------- Аутентификация ----------
 const passwordRules = (label: string) =>
   required(label)
     .min(8, `${label}: минимум 8 символов`)

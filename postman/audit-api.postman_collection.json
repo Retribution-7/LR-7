@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Аудит — REST API",
-    "description": "Тесты ЛР №7–8, вариант 4. Перед запуском выполните `bun run db:seed` (или `db:seed-users`). Запускать папки по порядку (Collection Runner), каждый запрос содержит автотесты. Переменная `resetToken` заполняется вручную из консоли сервера (запрос «Восстановление пароля: запрос ссылки»).",
+    "description": "Тесты ЛР №7-8, вариант 4. Перед запуском выполните `bun run db:seed` (или `db:seed-users`). Запускать папки по порядку (Collection Runner), каждый запрос содержит автотесты. Переменная `resetToken` заполняется вручную из консоли сервера (запрос «Восстановление пароля: запрос ссылки»).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -29,6 +29,22 @@
     },
     {
       "key": "testToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "testRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "usedRefreshToken",
       "value": ""
     },
     {
@@ -112,6 +128,7 @@
                 "exec": [
                   "pm.test(\"Статус 201\", () => pm.response.to.have.status(201));",
                   "pm.collectionVariables.set(\"testToken\", pm.response.json().token);",
+                  "pm.collectionVariables.set(\"testRefreshToken\", pm.response.json().refreshToken);",
                   "pm.collectionVariables.set(\"testUserId\", pm.response.json().user.id);",
                   "pm.expect(pm.response.json().user.role).to.eql(\"user\");"
                 ]
@@ -259,6 +276,7 @@
                 "exec": [
                   "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
                   "pm.collectionVariables.set(\"token\", pm.response.json().token);",
+                  "pm.collectionVariables.set(\"refreshToken\", pm.response.json().refreshToken);",
                   "pm.collectionVariables.set(\"adminId\", pm.response.json().user.id);",
                   "pm.expect(pm.response.json().user.role).to.eql(\"admin\");"
                 ]
@@ -466,6 +484,7 @@
                 "exec": [
                   "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
                   "pm.collectionVariables.set(\"userToken\", pm.response.json().token);",
+                  "pm.collectionVariables.set(\"userRefreshToken\", pm.response.json().refreshToken);",
                   "pm.expect(pm.response.json().user.role).to.eql(\"user\");"
                 ]
               }
@@ -492,6 +511,236 @@
           }
         },
         {
+          "name": "Обновление пары токенов (refresh)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"usedRefreshToken\", pm.collectionVariables.get(\"refreshToken\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"token\", pm.response.json().token);",
+                  "pm.collectionVariables.set(\"refreshToken\", pm.response.json().refreshToken);",
+                  "pm.expect(pm.response.json().refreshToken).to.not.eql(pm.collectionVariables.get(\"usedRefreshToken\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Refresh: повторное использование старого токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{usedRefreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Refresh: мусорный токен",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Refresh: пустое тело",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));",
+                  "pm.expect(pm.response.json().details.some(x => x.path === \"refreshToken\")).to.be.true;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Выход (logout)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().message).to.eql(\"Сессия завершена\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/logout",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Refresh после выхода",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
           "name": "Смена пароля (успех)",
           "event": [
             {
@@ -500,7 +749,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
-                  "pm.expect(pm.response.json().message).to.eql(\"Пароль изменён\");"
+                  "pm.expect(pm.response.json().message).to.eql(\"Пароль изменён\");",
+                  "pm.collectionVariables.set(\"testToken\", pm.response.json().token);",
+                  "pm.collectionVariables.set(\"testRefreshToken\", pm.response.json().refreshToken);"
                 ]
               }
             }
@@ -576,7 +827,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set(\"testToken\", pm.response.json().token);"
+                  "pm.collectionVariables.set(\"testToken\", pm.response.json().token);",
+                  "pm.collectionVariables.set(\"testRefreshToken\", pm.response.json().refreshToken);"
                 ]
               }
             }
@@ -813,7 +1065,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set(\"testToken\", pm.response.json().token);"
+                  "pm.collectionVariables.set(\"testToken\", pm.response.json().token);",
+                  "pm.collectionVariables.set(\"testRefreshToken\", pm.response.json().refreshToken);"
                 ]
               }
             }
@@ -1689,7 +1942,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
-                  "pm.expect(pm.response.json().data.length).to.be.above(0); // порядок текста зависит от collation БД, поэтому проверяем лишь успешный ответ"
+                  "pm.expect(pm.response.json().data.length).to.be.above(0);"
                 ]
               }
             }

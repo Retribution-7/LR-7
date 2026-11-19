@@ -1,11 +1,6 @@
-/**
- * Генерирует prisma/seed-data.json (детерминированные тестовые данные, seed=42).
- * Запуск: npm run db:gen-data (или tsx prisma/gen-seed.ts). Затем: npm run db:seed.
- */
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** mulberry32 — детерминированный ПСЧ, одинаковый вывод при одинаковом seed */
 function mulberry32(seed: number) {
   return function () {
     seed |= 0;
