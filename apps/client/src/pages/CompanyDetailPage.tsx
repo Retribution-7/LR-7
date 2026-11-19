@@ -13,6 +13,7 @@ import { useDetail } from '@/lib/useDetail';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { useCompaniesStore } from '@/stores/entityStore';
 import { useLookups } from '@/stores/lookups';
+import { useAuthStore } from '@/stores/authStore';
 import { NotFoundBlock } from './EmployeeDetailPage';
 
 export default function CompanyDetailPage() {
@@ -27,6 +28,7 @@ export default function CompanyDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [workOpen, setWorkOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
 
   const loadWorks = useCallback(async () => {
     try {
@@ -63,9 +65,11 @@ export default function CompanyDetailPage() {
               <h1 className="text-2xl font-semibold tracking-tight">{company.name}</h1>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="h-4 w-4" /> Изменить</Button>
-                <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
-                  <Trash2 className="h-4 w-4" /> Удалить
-                </Button>
+                {isAdmin && (
+                  <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
+                    <Trash2 className="h-4 w-4" /> Удалить
+                  </Button>
+                )}
               </div>
             </div>
             <dl className="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">

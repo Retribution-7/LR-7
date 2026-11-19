@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import { basePrisma, prisma } from '../src/db';
+import { seedUsers } from './seed-users';
 
 interface SeedData {
   categories: { name: string; hourlyRate: number }[];
@@ -17,7 +18,7 @@ interface SeedData {
 async function main() {
   const data: SeedData = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'seed-data.json'), 'utf-8'));
 
-  await basePrisma.$executeRawUnsafe('TRUNCATE TABLE "works", "employees", "companies", "categories" RESTART IDENTITY CASCADE');
+  await basePrisma.$executeRawUnsafe('TRUNCATE TABLE "works", "employees", "companies", "categories", "users", "roles" RESTART IDENTITY CASCADE');
 
   const categoryIds = new Map<string, number>();
   for (const c of data.categories) {
@@ -47,6 +48,8 @@ async function main() {
       } as any,
     });
   }
+
+  await seedUsers();
 
   console.log(
     `Готово: категорий ${data.categories.length}, предприятий ${data.companies.length}, ` +

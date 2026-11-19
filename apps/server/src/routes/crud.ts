@@ -3,8 +3,9 @@ import { Prisma } from '../generated/prisma/client';
 import { prisma } from '../db';
 import { HttpError } from '../errors';
 import { ah } from '../middleware/asyncHandler';
+import { requireRole } from '../middleware/auth';
 import { publicPath, removeUploaded, upload } from '../middleware/upload';
-import { nest, optInt, parseDate, parsePagination, Q, setCond, str } from '../utils/query';
+import { nest, optInt, parseDate, parseId, parsePagination, Q, setCond, str } from '../utils/query';
 
 export interface FilterDef {
   /** имя query-параметра */
@@ -32,14 +33,6 @@ export interface CrudConfig {
   /** есть ли у сущности фото (multipart-загрузка) */
   hasPhoto?: boolean;
   deleteConflictMessage: string;
-}
-
-function parseId(req: Request): number {
-  const raw = req.params.id;
-  if (!/^\d+$/.test(raw) || Number(raw) < 1 || Number(raw) > 2_147_483_647) {
-    throw new HttpError(400, 'Некорректный id: ожидается положительное целое число');
-  }
-  return Number(raw);
 }
 
 function buildFilters(q: Q, defs: FilterDef[]): Record<string, any> {
@@ -117,7 +110,7 @@ export function createCrudRouter(cfg: CrudConfig) {
   router.head(
     '/:id',
     ah(async (req, res) => {
-      const count = await model().count({ where: { id: parseId(req) } });
+      const count = await model().count({ where: { id: parseId(req.params.id) } });
       res.status(count > 0 ? 200 : 404).end();
     }),
   );
@@ -126,7 +119,7 @@ export function createCrudRouter(cfg: CrudConfig) {
   router.get(
     '/:id/exists',
     ah(async (req, res) => {
-      const id = parseId(req);
+      const id = parseId(req.params.id);
       res.json({ id, exists: (await model().count({ where: { id } })) > 0 });
     }),
   );
@@ -135,7 +128,7 @@ export function createCrudRouter(cfg: CrudConfig) {
   router.get(
     '/:id',
     ah(async (req, res) => {
-      const id = parseId(req);
+      const id = parseId(req.params.id);
       const item = await model().findUnique({ where: { id }, include: cfg.detailInclude ?? cfg.include });
       if (!item) throw notFound(id);
       res.json(item);
@@ -166,7 +159,7 @@ export function createCrudRouter(cfg: CrudConfig) {
   // ---- 8. Обновление (PUT и PATCH принимают любое подмножество полей) ----
   const update = ah(async (req, res) => {
     try {
-      const id = parseId(req);
+      const id = parseId(req.params.id);
       const existing = await model().findUnique({ where: { id } });
       if (!existing) throw notFound(id);
 
@@ -190,11 +183,12 @@ export function createCrudRouter(cfg: CrudConfig) {
   router.put('/:id', ...uploadMw, update);
   router.patch('/:id', ...uploadMw, update);
 
-  // ---- 9. Удаление ----
+  // ---- 9. Удаление (только admin) ----
   router.delete(
     '/:id',
+    requireRole('admin'),
     ah(async (req, res) => {
-      const id = parseId(req);
+      const id = parseId(req.params.id);
       const existing = await model().findUnique({ where: { id } });
       if (!existing) throw notFound(id);
       try {

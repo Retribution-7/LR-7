@@ -13,6 +13,7 @@ import { useDetail } from '@/lib/useDetail';
 import { ageFrom, formatDate, formatNumber } from '@/lib/utils';
 import { useEmployeesStore } from '@/stores/entityStore';
 import { useLookups } from '@/stores/lookups';
+import { useAuthStore } from '@/stores/authStore';
 
 export function NotFoundBlock({ what, back, to }: { what: string; back: string; to: string }) {
   return (
@@ -38,6 +39,7 @@ export default function EmployeeDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [workOpen, setWorkOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
 
   const loadWorks = useCallback(async () => {
     try {
@@ -80,9 +82,11 @@ export default function EmployeeDetailPage() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="h-4 w-4" /> Изменить</Button>
-                <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
-                  <Trash2 className="h-4 w-4" /> Удалить
-                </Button>
+                {isAdmin && (
+                  <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
+                    <Trash2 className="h-4 w-4" /> Удалить
+                  </Button>
+                )}
               </div>
             </div>
             <dl className="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">

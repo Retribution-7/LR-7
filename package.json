@@ -10,6 +10,7 @@
     "dev:server": "cd apps/server && bun run dev",
     "db:setup": "cd apps/server && bun run db:setup",
     "db:seed": "cd apps/server && bun run db:seed",
+    "db:seed-users": "cd apps/server && bun run db:seed-users",
     "db:gen-data": "cd apps/server && bun run db:gen-data",
     "typecheck": "cd apps/server && bun run typecheck && cd ../client && bun run typecheck"
   },

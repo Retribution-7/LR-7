@@ -13,13 +13,20 @@ def folder(name):
 def status_test(code):
     return f'pm.test("Статус {code}", () => pm.response.to.have.status({code}));'
 
-def request(name, method, path, expected, status, body=None, tests="", pre="", formdata=None):
+def request(name, method, path, expected, status, body=None, tests="", pre="", formdata=None, auth=None, headers=None):
     events = []
     if pre:
         events.append({"listen": "prerequest", "script": {"type": "text/javascript", "exec": pre.strip().split("\n")}})
     code = status_test(status) + ("\n" + tests.strip() if tests else "")
     events.append({"listen": "test", "script": {"type": "text/javascript", "exec": code.split("\n")}})
     req = {"method": method, "header": [], "url": "{{baseUrl}}" + path}
+    # auth: None — collection-level bearer {{token}}; "none" — без токена; "имяПеременной" — Bearer {{имяПеременной}}
+    if auth == "none":
+        req["auth"] = {"type": "noauth"}
+    elif isinstance(auth, str):
+        req["header"].append({"key": "Authorization", "value": "Bearer {{" + auth + "}}"})
+    if headers:
+        req["header"].extend(headers)
     if body is not None:
         req["header"].append({"key": "Content-Type", "value": "application/json"})
         req["body"] = {"mode": "raw", "raw": json.dumps(body, ensure_ascii=False, indent=2), "options": {"raw": {"language": "json"}}}
@@ -38,8 +45,100 @@ request("Проверка доступности API", "GET", "/health", "API о
 request("Несуществующий маршрут", "GET", "/unknown", "404 и JSON с сообщением", 404,
         tests='pm.expect(pm.response.json()).to.have.property("message");')
 
+# ---------------------------------------------------------------- Авторизация
+SAVE_USER_ID = lambda var: f'pm.collectionVariables.set("{var}", pm.response.json().user.id);'
+SAVE_TOKEN = lambda var: f'pm.collectionVariables.set("{var}", pm.response.json().token);'
+
+folder("1. Авторизация")
+request("Регистрация пользователя", "POST", "/auth/register", "201, `token`, `user.role` = \"user\"", 201,
+        pre='pm.collectionVariables.set("testUser", "test" + Date.now());',
+        body={"username": "{{testUser}}", "password": "Test1234"},
+        tests=SAVE_TOKEN("testToken") + '\n' + SAVE_USER_ID("testUserId") +
+              '\npm.expect(pm.response.json().user.role).to.eql("user");')
+request("Регистрация: дубликат логина", "POST", "/auth/register", "409, ошибка по полю `username`", 409,
+        body={"username": "admin", "password": "Test1234"},
+        tests='pm.expect(pm.response.json().details.some(x => x.path === "username")).to.be.true;')
+request("Регистрация: слабый пароль", "POST", "/auth/register", "400, ошибка по полю `password`", 400,
+        pre='pm.collectionVariables.set("testUser2", "test" + Date.now() + "x");',
+        body={"username": "{{testUser2}}", "password": "123"},
+        tests='pm.expect(pm.response.json().details.some(x => x.path === "password")).to.be.true;')
+request("Регистрация: некорректный логин", "POST", "/auth/register", "400, ошибка по полю `username`", 400,
+        body={"username": "логин с пробелами", "password": "Test1234"},
+        tests='pm.expect(pm.response.json().details.some(x => x.path === "username")).to.be.true;')
+request("Вход администратора", "POST", "/auth/login", "200, сохранён `token` администратора", 200,
+        body={"username": "admin", "password": "Admin123"},
+        tests=SAVE_TOKEN("token") + '\n' + SAVE_USER_ID("adminId") +
+              '\npm.expect(pm.response.json().user.role).to.eql("admin");')
+request("Вход: неверный пароль", "POST", "/auth/login", "401 «Неверный логин или пароль»", 401,
+        body={"username": "admin", "password": "WrongPass1"},
+        tests='pm.expect(pm.response.json().message).to.eql("Неверный логин или пароль");')
+request("Вход: несуществующий логин", "POST", "/auth/login", "401 (то же сообщение — без перебора пользователей)", 401,
+        body={"username": "no_such_user", "password": "Test1234"},
+        tests='pm.expect(pm.response.json().message).to.eql("Неверный логин или пароль");')
+request("Вход: пустые поля", "POST", "/auth/login", "400, ошибки по полям", 400,
+        body={"username": "", "password": ""},
+        tests='const d = pm.response.json().details; pm.expect(d.some(x => x.path === "username")).to.be.true; pm.expect(d.some(x => x.path === "password")).to.be.true;')
+request("Текущий пользователь", "GET", "/auth/me", "200 `{id, username, role: \"admin\"}`", 200,
+        tests='const b = pm.response.json(); pm.expect(b.role).to.eql("admin"); pm.expect(b).to.have.property("username");')
+request("Без токена", "GET", "/auth/me", "401", 401, auth="none")
+request("Невалидный токен", "GET", "/categories", "401", 401,
+        auth="none",
+        headers=[{"key": "Authorization", "value": "Bearer abc.def.ghi"}])
+request("Вход обычного пользователя", "POST", "/auth/login", "200, сохранён `userToken`", 200,
+        body={"username": "user", "password": "User1234"},
+        tests=SAVE_TOKEN("userToken") + '\npm.expect(pm.response.json().user.role).to.eql("user");')
+request("Смена пароля (успех)", "POST", "/auth/change-password", "200", 200,
+        auth="testToken",
+        body={"oldPassword": "Test1234", "newPassword": "Test5678"},
+        tests='pm.expect(pm.response.json().message).to.eql("Пароль изменён");')
+request("Смена пароля: неверный текущий", "POST", "/auth/change-password", "400, ошибка по `oldPassword`", 400,
+        auth="testToken",
+        body={"oldPassword": "BadPass99", "newPassword": "Test9999"},
+        tests='pm.expect(pm.response.json().details.some(x => x.path === "oldPassword")).to.be.true;')
+request("Вход с новым паролем", "POST", "/auth/login", "200", 200,
+        body={"username": "{{testUser}}", "password": "Test5678"},
+        tests=SAVE_TOKEN("testToken"))
+request("Восстановление пароля: запрос ссылки", "POST", "/auth/forgot-password",
+        "200, одинаковое сообщение; ссылка — в консоли сервера (вставьте токен в `resetToken`)", 200,
+        body={"username": "{{testUser}}"},
+        tests='pm.expect(pm.response.json().message).to.include("ссылка");')
+request("Восстановление: несуществующий логин", "POST", "/auth/forgot-password",
+        "200 с тем же сообщением (без перебора)", 200,
+        body={"username": "no_such_user"},
+        tests='pm.expect(pm.response.json().message).to.include("ссылка");')
+request("Сброс пароля: мусорный токен", "POST", "/auth/reset-password",
+        "400 «Ссылка недействительна или истекла»", 400,
+        body={"token": "0000000000000000000000000000000000000000000000000000000000000000", "newPassword": "NewPass12"},
+        tests='pm.expect(pm.response.json().details.some(x => x.path === "token")).to.be.true;')
+request("Сброс пароля: слабый новый пароль", "POST", "/auth/reset-password",
+        "400 по полю `newPassword`", 400,
+        body={"token": "{{resetToken}}", "newPassword": "123"},
+        tests='pm.expect(pm.response.json().details.some(x => x.path === "newPassword")).to.be.true;')
+request("Сброс пароля (успех)", "POST", "/auth/reset-password",
+        "200; `resetToken` вставляется вручную из консоли сервера", 200,
+        body={"token": "{{resetToken}}", "newPassword": "NewPass12"},
+        tests='pm.expect(pm.response.json().message).to.eql("Пароль восстановлен");')
+request("Сброс пароля: повторный тем же токеном", "POST", "/auth/reset-password",
+        "400 — токен одноразовый", 400,
+        body={"token": "{{resetToken}}", "newPassword": "NewPass34"})
+request("Вход с восстановленным паролем", "POST", "/auth/login", "200", 200,
+        body={"username": "{{testUser}}", "password": "NewPass12"},
+        tests=SAVE_TOKEN("testToken"))
+request("Список пользователей (админ)", "GET", "/users", "200, есть admin и user", 200,
+        tests='const d = pm.response.json().data; pm.expect(d.some(u => u.username === "admin")).to.be.true; pm.expect(d.some(u => u.username === "user")).to.be.true;')
+request("Список пользователей (user)", "GET", "/users", "403", 403, auth="userToken")
+request("Смена роли", "PATCH", "/users/{{testUserId}}", "200, роль изменена", 200,
+        body={"role": "admin"},
+        tests='pm.expect(pm.response.json().role).to.eql("admin");')
+request("Смена своей роли", "PATCH", "/users/{{adminId}}", "400 «Нельзя изменить собственную роль»", 400,
+        body={"role": "user"},
+        tests='pm.expect(pm.response.json().message).to.include("собственную роль");')
+request("Удаление пользователя (админ)", "DELETE", "/users/{{testUserId}}", "200", 200)
+request("Удаление себя", "DELETE", "/users/{{adminId}}", "400 «Нельзя удалить собственную учётную запись»", 400,
+        tests='pm.expect(pm.response.json().message).to.include("собственную учётную запись");')
+
 # ---------------------------------------------------------------- Категории
-folder("1. Категории")
+folder("2. Категории")
 request("Создание категории", "POST", "/categories", "Запись создана, возвращён `id`", 201,
         body={"name": "Тестовая категория {{$timestamp}}", "hourlyRate": 40},
         tests=SAVE("categoryId") + '\npm.expect(pm.response.json().hourlyRate).to.eql(40);')
@@ -72,7 +171,7 @@ request("Обновление: записи нет", "PUT", "/categories/999999"
 
 # ---------------------------------------------------------------- Сотрудники
 PRE_EMP = 'pm.collectionVariables.set("passport", "TS" + Math.floor(1000000 + Math.random()*8999999));'
-folder("2. Сотрудники")
+folder("3. Сотрудники")
 request("Создание сотрудника", "POST", "/employees", "Запись создана, `category` подгружена", 201,
         pre=PRE_EMP,
         body={"fullName": "Тестов Иван Петрович", "passportNumber": "{{passport}}", "birthDate": "1990-05-12",
@@ -121,7 +220,7 @@ request("Обновление (PATCH): невалидное значение", "
         body={"workPhone": "abc"})
 
 # ---------------------------------------------------------------- Предприятия
-folder("3. Предприятия")
+folder("4. Предприятия")
 request("Создание предприятия", "POST", "/companies", "Запись создана", 201,
         body={"name": "ООО «Тест-Аудит {{$timestamp}}»", "address": "г. Минск, ул. Тестовая, 1", "phone": "+375 17 123-45-67"},
         tests=SAVE("companyId"))
@@ -139,7 +238,7 @@ request("Обновление", "PUT", "/companies/{{companyId}}", "Адрес �
         tests='pm.expect(pm.response.json().address).to.eql("г. Минск, ул. Новая, 5");')
 
 # ---------------------------------------------------------------- Работы
-folder("4. Работы")
+folder("5. Работы")
 request("Создание работы", "POST", "/works", "Запись создана", 201,
         body={"employeeId": "{{employeeId}}", "companyId": "{{companyId}}", "workDate": "2025-03-03", "hoursWorked": 8},
         tests=SAVE("workId") + '\npm.expect(pm.response.json().hoursWorked).to.eql(8);')
@@ -167,13 +266,20 @@ request("Обновление работы", "PUT", "/works/{{workId}}", "Час
         body={"hoursWorked": 6}, tests='pm.expect(pm.response.json().hoursWorked).to.eql(6);')
 
 # ---------------------------------------------------------------- Отчёт
-folder("5. Отчёт")
+folder("6. Отчёт")
 request("Ведомость начислений за год", "GET", "/reports/payroll?year=2025", "Группировка по предприятиям, итоги = сумме строк", 200,
         tests='const b = pm.response.json(); let sum = 0; b.companies.forEach(c => { c.rows.forEach(r => pm.expect(r.accrued).to.be.closeTo(r.hoursWorked * r.hourlyRate, 0.011)); sum += c.totalAccrued; }); pm.expect(b.totalAccrued).to.be.closeTo(sum, 0.011);')
 request("Ведомость: некорректный месяц", "GET", "/reports/payroll?year=2025&month=13", "400", 400)
 
+# ---------------------------------------------------------------- Проверка прав
+folder("7. Проверка прав")
+request("DELETE сущности как user", "DELETE", "/works/{{workId}}", "403", 403, auth="userToken")
+request("Обновление сущности как user", "PATCH", "/categories/{{categoryId}}", "200 (право user на изменение)", 200,
+        auth="userToken",
+        body={"hourlyRate": 41})
+
 # ---------------------------------------------------------------- Удаление
-folder("6. Удаление и целостность")
+folder("8. Удаление и целостность")
 request("Удаление категории с сотрудниками", "DELETE", "/categories/{{categoryId}}", "409 — нельзя удалить, есть сотрудники", 409,
         tests='pm.expect(pm.response.json().message).to.include("Невозможно удалить");')
 request("Удаление сотрудника с работами", "DELETE", "/employees/{{employeeId}}", "409 — нельзя удалить, есть работы", 409,
@@ -187,13 +293,34 @@ request("Удаление сотрудника", "DELETE", "/employees/{{employe
 request("Удаление предприятия", "DELETE", "/companies/{{companyId}}", "200", 200)
 request("Удаление категории", "DELETE", "/categories/{{categoryId}}", "200", 200)
 
+# ---------------------------------------------------------------- Количество записей
+folder("9. Количество записей")
+SAVE_TOTAL = lambda var: f'pm.collectionVariables.set("{var}", pm.response.json().total);'
+request("Итоги: категории", "GET", "/categories?limit=1", "total сохранён", 200, tests=SAVE_TOTAL("cntCategories"))
+request("Итоги: предприятия", "GET", "/companies?limit=1", "total сохранён", 200, tests=SAVE_TOTAL("cntCompanies"))
+request("Итоги: сотрудники", "GET", "/employees?limit=1", "total сохранён", 200, tests=SAVE_TOTAL("cntEmployees"))
+request("Итоги: работы", "GET", "/works?limit=1", "total сохранён", 200, tests=SAVE_TOTAL("cntWorks"))
+request("Итоги: пользователи", "GET", "/users?limit=1", "total сохранён", 200, tests=SAVE_TOTAL("cntUsers"))
+request("Суммарно не менее 50 записей", "GET", "/users?limit=1",
+        "сумма `total` по всем разделам ≥ 50 (предметные + роли и пользователи)", 200,
+        tests='const sum = Number(pm.collectionVariables.get("cntCategories")) + Number(pm.collectionVariables.get("cntCompanies")) + Number(pm.collectionVariables.get("cntEmployees")) + Number(pm.collectionVariables.get("cntWorks")) + Number(pm.collectionVariables.get("cntUsers")); pm.expect(sum).to.be.at.least(50);')
+
 collection = {
     "info": {
         "name": "Аудит — REST API",
-        "description": "Тесты ЛР №7, вариант 4. Перед запуском выполните `npm run db:seed`. Запускать папки по порядку (Collection Runner), каждый запрос содержит автотесты.",
+        "description": "Тесты ЛР №7–8, вариант 4. Перед запуском выполните `bun run db:seed` (или `db:seed-users`). Запускать папки по порядку (Collection Runner), каждый запрос содержит автотесты. Переменная `resetToken` заполняется вручную из консоли сервера (запрос «Восстановление пароля: запрос ссылки»).",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     },
-    "variable": [{"key": "baseUrl", "value": "http://localhost:4000/api"}],
+    "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+    "variable": [
+        {"key": "baseUrl", "value": "http://localhost:4000/api"},
+        {"key": "token", "value": ""},
+        {"key": "userToken", "value": ""},
+        {"key": "testToken", "value": ""},
+        {"key": "resetToken", "value": ""},
+        {"key": "adminId", "value": ""},
+        {"key": "testUserId", "value": ""},
+    ],
     "item": folders,
 }
 with open("audit-api.postman_collection.json", "w", encoding="utf-8") as f:

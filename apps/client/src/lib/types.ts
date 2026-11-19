@@ -6,6 +6,14 @@ export interface Paged<T> {
   pages: number;
 }
 
+export type Role = 'admin' | 'user';
+
+export interface User {
+  id: number;
+  username: string;
+  role: Role;
+}
+
 export interface Category {
   id: number;
   name: string;

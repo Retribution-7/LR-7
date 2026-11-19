@@ -1,6 +1,23 @@
 import axios from 'axios';
+import { getToken } from './session';
 
 export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api' });
+
+api.interceptors.request.use((config) => {
+  const t = getToken();
+  if (t) config.headers.Authorization = `Bearer ${t}`;
+  return config;
+});
+
+api.interceptors.response.use(undefined, (error) => {
+  if (axios.isAxiosError(error) && error.response?.status === 401) {
+    const url = error.config?.url ?? '';
+    if (!url.includes('/auth/')) {
+      import('@/stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().logout());
+    }
+  }
+  return Promise.reject(error);
+});
 
 export interface FieldIssue {
   path: string;

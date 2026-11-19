@@ -33,6 +33,14 @@ export function parsePagination(q: Q) {
   return { page, limit, skip: (page - 1) * limit };
 }
 
+/** Параметр :id как положительное целое число */
+export function parseId(raw: string): number {
+  if (!/^\d+$/.test(raw) || Number(raw) < 1 || Number(raw) > 2_147_483_647) {
+    throw new HttpError(400, 'Некорректный id: ожидается положительное целое число');
+  }
+  return Number(raw);
+}
+
 /** 'employee.fullName' + 'asc' -> { employee: { fullName: 'asc' } } */
 export function nest(path: string, value: unknown): Record<string, unknown> {
   return path

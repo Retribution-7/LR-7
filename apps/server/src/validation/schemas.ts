@@ -119,3 +119,52 @@ export const modelSchemas: Record<string, z.AnyZodObject> = {
   Company: companySchema,
   Work: workSchema,
 };
+
+// ---------- Аутентификация ----------
+
+const usernameField = z
+  .string({ required_error: 'Логин: обязательное поле' })
+  .trim()
+  .toLowerCase()
+  .min(3, 'Логин: минимум 3 символа')
+  .max(30, 'Логин: максимум 30 символов')
+  .regex(/^[a-z0-9_.-]+$/, 'Логин: допустимы латинские буквы, цифры, «_», «.», «-»');
+
+const passwordField = z
+  .string({ required_error: 'Пароль: обязательное поле' })
+  .min(8, 'Пароль: минимум 8 символов')
+  .max(72, 'Пароль: максимум 72 символа')
+  .refine((v) => /[A-Za-zА-Яа-яЁё]/.test(v), 'Пароль: хотя бы одна буква')
+  .refine((v) => /\d/.test(v), 'Пароль: хотя бы одна цифра');
+
+export const registerSchema = z.object({ username: usernameField, password: passwordField });
+
+export const loginSchema = z.object({
+  username: z.string({ required_error: 'Логин: обязательное поле' }).trim().min(1, 'Логин: обязательное поле'),
+  password: z.string({ required_error: 'Пароль: обязательное поле' }).min(1, 'Пароль: обязательное поле'),
+});
+
+export const changePasswordSchema = z
+  .object({
+    oldPassword: z.string({ required_error: 'Текущий пароль: обязательное поле' }).min(1, 'Текущий пароль: обязательное поле'),
+    newPassword: passwordField,
+  })
+  .refine((v) => v.newPassword !== v.oldPassword, {
+    message: 'Новый пароль должен отличаться от текущего',
+    path: ['newPassword'],
+  });
+
+export const userRoleSchema = z.object({
+  role: z.enum(['admin', 'user'], {
+    errorMap: () => ({ message: 'Роль: допустимо admin или user' }),
+  }),
+});
+
+export const forgotPasswordSchema = z.object({
+  username: z.string({ required_error: 'Логин: обязательное поле' }).trim().min(1, 'Логин: обязательное поле'),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string({ required_error: 'Токен: обязательное поле' }).trim().min(1, 'Токен: обязательное поле'),
+  newPassword: passwordField,
+});

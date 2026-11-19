@@ -55,4 +55,66 @@ export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 export type CompanyFormValues = z.infer<typeof companyFormSchema>;
 export type WorkFormValues = z.infer<typeof workFormSchema>;
 
+// ---------- Аутентификация ----------
+const passwordRules = (label: string) =>
+  required(label)
+    .min(8, `${label}: минимум 8 символов`)
+    .max(72, `${label}: максимум 72 символа`)
+    .refine((v) => /[A-Za-zА-Яа-яЁё]/.test(v), `${label}: хотя бы одна буква`)
+    .refine((v) => /\d/.test(v), `${label}: хотя бы одна цифра`);
+
+export const loginFormSchema = z.object({
+  username: required('Логин'),
+  password: required('Пароль'),
+});
+
+export const registerFormSchema = z
+  .object({
+    username: required('Логин')
+      .min(3, 'Логин: минимум 3 символа')
+      .max(30, 'Логин: максимум 30 символов')
+      .regex(/^[A-Za-z0-9_.-]+$/, 'Логин: допустимы латинские буквы, цифры, «_», «.», «-»'),
+    password: passwordRules('Пароль'),
+    confirmPassword: required('Подтверждение пароля'),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    message: 'Пароли не совпадают',
+    path: ['confirmPassword'],
+  });
+
+export const changePasswordFormSchema = z
+  .object({
+    oldPassword: required('Текущий пароль'),
+    newPassword: passwordRules('Новый пароль'),
+    confirmPassword: required('Подтверждение пароля'),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: 'Пароли не совпадают',
+    path: ['confirmPassword'],
+  })
+  .refine((v) => v.newPassword !== v.oldPassword, {
+    message: 'Новый пароль должен отличаться от текущего',
+    path: ['newPassword'],
+  });
+
+export const forgotPasswordFormSchema = z.object({
+  username: required('Логин'),
+});
+
+export const resetPasswordFormSchema = z
+  .object({
+    newPassword: passwordRules('Новый пароль'),
+    confirmPassword: required('Подтверждение пароля'),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: 'Пароли не совпадают',
+    path: ['confirmPassword'],
+  });
+
+export type LoginFormValues = z.infer<typeof loginFormSchema>;
+export type RegisterFormValues = z.infer<typeof registerFormSchema>;
+export type ChangePasswordFormValues = z.infer<typeof changePasswordFormSchema>;
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordFormSchema>;
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordFormSchema>;
+
 export const toNumber = num;

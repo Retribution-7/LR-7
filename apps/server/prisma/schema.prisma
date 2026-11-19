@@ -46,6 +46,34 @@ model Company {
   @@map("companies")
 }
 
+/// Роль пользователя системы (справочник)
+model Role {
+  id      Int    @id @default(autoincrement())
+  /// admin | user
+  name    String @unique @db.VarChar(20)
+  users   User[]
+
+  @@map("roles")
+}
+
+/// Пользователь системы (учётная запись для входа)
+model User {
+  id           Int       @id @default(autoincrement())
+  /// Логин (уникален, хранится в нижнем регистре)
+  username     String    @unique @db.VarChar(30)
+  /// Хэш пароля (bcryptjs)
+  passwordHash String    @db.VarChar(100)
+  /// Хэш одноразового токена восстановления пароля (SHA-256 hex); null — токена нет
+  resetTokenHash    String?   @db.VarChar(64)
+  /// Срок действия токена восстановления; null — токена нет
+  resetTokenExpiresAt DateTime?
+  roleId       Int
+  role         Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@index([roleId])
+  @@map("users")
+}
+
 /// Выполненная работа: сотрудник проверял предприятие в указанную дату
 model Work {
   id          Int      @id @default(autoincrement())
